@@ -1,6 +1,7 @@
 "use server";
 
 import OpenAI from "openai";
+import prisma from "./db";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -21,13 +22,9 @@ export const generateChatResponse = async (chatMessage) => {
   }
 };
 
-export const getExistingTour = async ({ city, country }) => {
-  return null;
-};
-
 export const generateTourResponse = async ({ city, country }) => {
   const query = `Find a exact ${city} in this exact ${country}.
-If ${city} and ${country} exist, create a list of things families can do in this ${city},${country}. 
+If ${city} and ${country} exist, create a list of things families can do in this ${city},${country} including a brief description. 
 Once you have a list, create a one-day tour. Response should be  in the following JSON format: 
 {
   "tour": {
@@ -35,7 +32,8 @@ Once you have a list, create a one-day tour. Response should be  in the followin
     "country": "${country}",
     "title": "title of the tour",
     "description": "short description of the city and tour",
-    "stops": [" stop name", "stop name","stop name"]
+    "stops": [{"name": "stop name", "description": "short description of the stop"}, ...]
+
   }
 }
 "stops" property should include only three stops.
@@ -48,7 +46,7 @@ If you can't find info on exact ${city}, or ${city} does not exist, or it's popu
         { role: "user", content: query },
       ],
       model: "gpt-3.5-turbo",
-      temperature: 0,
+      temperature: 1,
     });
     const tourData = JSON.parse(response.choices[0].message.content);
     if (!tourData.tour) {
@@ -62,5 +60,18 @@ If you can't find info on exact ${city}, or ${city} does not exist, or it's popu
 };
 
 export const createNewTour = async (tour) => {
-  return null;
+  return prisma.tour.create({
+    data: tour,
+  });
+};
+
+export const getExistingTour = async ({ city, country }) => {
+  return prisma.tour.findUnique({
+    where: {
+      city_country: {
+        city,
+        country,
+      },
+    },
+  });
 };

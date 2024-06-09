@@ -1,19 +1,26 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import TourInfo from "./TourInfo";
-import { generateTourResponse } from "@/utils/action";
+import { createNewTour, generateTourResponse, getExistingTour } from "@/utils/action";
 import toast from "react-hot-toast";
 
 const NewTour = () => {
+  const queryClient = useQueryClient();
   const {
     mutate,
     isPending,
     data: tour,
   } = useMutation({
-    mutationFn: async (desciption) => {
-      const newTour = await generateTourResponse(desciption);
+    mutationFn: async (destionation) => {
+      const existingTouer = await getExistingTour(destionation);
+
+      if (existingTouer) return existingTouer;
+
+      const newTour = await generateTourResponse(destionation);
       if (newTour) {
+        await createNewTour(newTour);
+        queryClient.invalidateQueries({ queryKey: ["tours"] });
         return newTour;
       }
       toast.error("No matching tour found. Please try again.");

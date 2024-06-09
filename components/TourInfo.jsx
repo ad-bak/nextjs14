@@ -7,7 +7,8 @@ const TourInfo = ({ tour }) => {
       <ul>
         {stops.map((stop, index) => (
           <li key={index} className="mb-4 bg-base-100 p-4 rounded-xl">
-            {stop}
+            <h4 className="font-bold">{stop.name}</h4>
+            <p>{stop.description}</p>
           </li>
         ))}
       </ul>
