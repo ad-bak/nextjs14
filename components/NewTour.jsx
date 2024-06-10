@@ -2,11 +2,21 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import TourInfo from "./TourInfo";
-import { createNewTour, generateTourResponse, getExistingTour } from "@/utils/action";
+import {
+  createNewTour,
+  fetchUserTokensById,
+  generateTourResponse,
+  getExistingTour,
+  subtractTokens,
+} from "@/utils/action";
 import toast from "react-hot-toast";
+import { useAuth } from "@clerk/nextjs";
 
 const NewTour = () => {
   const queryClient = useQueryClient();
+
+  const { userId } = useAuth();
+
   const {
     mutate,
     isPending,
@@ -17,14 +27,24 @@ const NewTour = () => {
 
       if (existingTouer) return existingTouer;
 
-      const newTour = await generateTourResponse(destionation);
-      if (newTour) {
-        await createNewTour(newTour);
-        queryClient.invalidateQueries({ queryKey: ["tours"] });
-        return newTour;
+      const currentTokens = await fetchUserTokensById(userId);
+      if (currentTokens < 10) {
+        toast.error("You don't have enough tokens to generate a new tour.");
+        return null;
       }
-      toast.error("No matching tour found. Please try again.");
-      return null;
+
+      const newTour = await generateTourResponse(destionation);
+
+      if (!newTour) {
+        toast.error("No tour found for this destination.");
+        return null;
+      }
+
+      const response = await createNewTour(newTour.tour);
+      queryClient.invalidateQueries({ queryKey: ["tours"] });
+      const newTokens = await subtractTokens(userId, newTour.tokens);
+      toast.success(`Tour generated successfully. You have ${newTokens} tokens left.`);
+      return newTour.tour;
     },
   });
 
