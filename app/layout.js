@@ -15,7 +15,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" data-theme="winter">
       <ClerkProvider>
-        <body className={inter.className}>
+        <body className={inter.className} suppressHydrationWarning>
           <Providers>{children}</Providers>
         </body>
       </ClerkProvider>
